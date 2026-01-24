@@ -1,155 +1,152 @@
 ---
 name: agent-prompt-design
-description: Guide users through designing well-structured prompts for AI agents using proven architecture patterns and core principles. Helps users create clear instructions, explicit heuristics, and effective evaluation strategies for production-ready agents.
+description: Create well-structured prompts for AI agents using proven architecture patterns. Use when users ask to write agent prompts, system prompts, or agent instructions, or want to improve existing prompts that aren't working.
 ---
 
 # Agent Prompt Design
 
-### Intent
-Enable an agent to help users design effective, production-ready prompts for AI agents by applying structured architecture patterns and core prompting principles.
+## Process
 
-### When to Apply
-Activate this skill when users:
-- Ask how to write prompts for AI agents
-- Need help structuring agent instructions or system prompts
-- Want to improve existing agent prompts that aren't working well
-- Request guidance on agent architecture or design patterns
-- Ask about best practices for agent prompting
-- Need help debugging agent behavior or tool usage
-- Want to understand how to make agents more reliable
+### Phase 1: Gather Requirements
 
-### Inputs
-Required information:
-- The agent's intended purpose or role
-- What tools or capabilities the agent will have access to
-- What tasks the agent should perform
+Collect the following before drafting:
 
-Helpful context:
-- Current prompt (if improving an existing agent)
-- Specific problems or failures encountered
-- Domain-specific requirements or constraints
-- Success criteria or evaluation needs
+**Required:**
+- Agent's purpose and role (what it does)
+- Available tools and their capabilities
+- Primary tasks the agent should perform
 
-### Instructions
+**If improving an existing prompt:**
+- Current prompt text
+- Specific failures or problems observed
+- Example queries that don't work well
 
-#### 1. Guide Prompt Architecture
+### Phase 2: Draft the Prompt Structure
 
-Explain that well-structured agent prompts have five essential components:
+Build the prompt with these five components in order:
 
-1. **Role definition** - Who is the agent and what's its purpose
-2. **Dynamic content retrieval** - How to access relevant context
-3. **Detailed instructions** - Step-by-step behavioral guidance
-4. **Optional examples** - When helpful for complex tasks
-5. **Repeated critical instructions** - For long prompts, repeat key rules at the end
+#### 2.1 Role Definition
+Write 1-2 sentences establishing identity and function.
 
-Help the user structure their prompt following this architecture.
+```
+You are a [role] that [primary function]. Your goal is to [main objective].
+```
 
-#### 2. Apply the "Start Simple" Principle
+#### 2.2 Dynamic Content Section
+Add placeholders for context that will be injected at runtime. Focus on domain-specific data the framework won't provide automatically:
 
-- Guide users to begin with straightforward prompts rather than trying to perfect everything upfront
-- Recommend drafting initial versions quickly, then iterating based on testing
-- Suggest using AI tools to help draft the initial prompt structure
-- Emphasize that refinement comes from real-world testing, not upfront speculation
+```
+## Current Context
+- User: {{user_name}}
+- Account type: {{account_tier}}
+- Permissions: {{user_permissions}}
+```
 
-#### 3. Apply Empathetic Design
+Note: Conversation history and tool definitions are typically handled by the framework—don't include them unless the system requires manual injection.
 
-Explain the core principle: "If a human cannot follow the instructions, neither can the agent."
+#### 2.3 Detailed Instructions
+Write step-by-step behavioral guidance. Be specific about:
+- What to do first when receiving a request
+- How to handle common scenarios
+- When to use which tools
+- What format to use for responses
 
-Guide users to:
-- Put themselves in the agent's position
-- Simulate having only the described tools and context
-- Check if they could actually follow the instructions as written
-- Identify ambiguities by role-playing as the agent
-- Clarify any steps that require assumptions or unclear decision-making
+#### 2.4 Examples (Optional)
+Include only if the task has non-obvious output formats. Keep examples minimal—frontier models don't need extensive few-shot demonstrations.
 
-#### 4. Identify Explicit Heuristics Needed
+#### 2.5 Critical Reminders
+For prompts longer than ~500 words, repeat the most important rules at the end. Models pay more attention to the beginning and end of prompts.
 
-Ask users to consider domain-specific decision-making rules that must be written explicitly:
+### Phase 3: Add Explicit Heuristics
 
-- When something is irreversible vs. safe to try
-- What "good enough" means in their context
-- Resource limits and budgets (API calls, tokens, time)
-- Priority ordering when goals conflict
-- When to ask the user vs. make autonomous decisions
+Identify domain-specific decisions the agent must make and write explicit rules for each.
 
-Help users articulate these heuristics clearly in the prompt.
+**Questions to answer:**
+- What actions are irreversible? → Add confirmation requirements
+- What does "good enough" mean? → Define stopping conditions
+- What are the resource limits? → Set budgets (API calls, searches, time)
+- What happens when goals conflict? → Define priority order
+- When should the agent ask vs. decide? → Set autonomy boundaries
 
-#### 5. Address Strategic Tool Selection
+**Transform vague instructions into explicit rules:**
 
-When the agent has multiple similar tools:
+| Vague | Explicit |
+|-------|----------|
+| "Search for relevant documents" | "Search up to 3 times. If no relevant results after 3 searches, ask the user to clarify." |
+| "Make sure the data is accurate" | "Cross-reference data from at least 2 sources before presenting to user." |
+| "Be thorough" | "For simple questions, use 1-2 tool calls. For complex analysis, use up to 10." |
 
-- Suggest using clear, descriptive prefixes (e.g., `slack_search` vs `notion_search`)
-- Guide users to provide explicit guidance on which tool to use when
-- Help them explain trade-offs between tool options
-- Clarify when tools overlap and how to choose between them
+### Phase 4: Handle Tool Usage
 
-#### 6. Guide Reasoning Approach
+Add guidance for how the agent should use its tools.
 
-Direct users to include instructions that:
-- Ask the agent to plan before acting on complex tasks
-- Encourage reflection after retrieving data
-- Request explanations of reasoning for important decisions
+**For agents with MCP servers or dynamic tools:**
+Tools are loaded automatically with their own descriptions. Focus on:
+- When to prefer one category of tools over another
+- Sequencing guidance (e.g., "read before write", "search before create")
+- Domain-specific tool workflows
 
-**Important**: Warn against prescribing exact thought patterns. Explain that modern models benefit from interleaved thinking between tool calls, not rigid "think, then act" sequences.
+```
+## Tool Usage Guidelines
+- Always read existing data before attempting modifications
+- Prefer search tools over list tools when looking for specific items
+- Use creation tools only after confirming the item doesn't exist
+```
 
-#### 7. Manage Side Effects
+**For agents with custom/static tools:**
+If tools have overlapping functions or ambiguous names, add explicit selection rules:
 
-Help users identify and address potential issues:
+```
+## When to Use Each Tool
+- Use `search_docs` for internal knowledge base queries
+- Use `search_web` only when docs don't have the answer
+- Use `ask_user` when the query is ambiguous after one search attempt
+```
 
-- **Unintended loops**: Guide users to specify when the agent should stop
-- **Excessive tool usage**: Set clear budgets or limits
-- **Irreversible actions**: Require confirmation or add safety checks
-- **Runaway costs**: Define resource constraints
-- **Perfectionism**: Allow agents to achieve "good enough" results
+### Phase 5: Add Safety Guardrails
 
-Ask users what actions their agent could take that can't be undone, and ensure the prompt addresses these.
+Address potential failure modes in the prompt:
 
-#### 8. Design Evaluation Strategy
+**Loops:** Add stopping conditions
+```
+If you've attempted the same action 3 times without progress, stop and ask the user for guidance.
+```
 
-Guide users to create 3-5 realistic test queries before considering the prompt complete.
+**Excessive tool use:** Set budgets
+```
+Limit to 5 tool calls per user request unless explicitly asked for deeper research.
+```
 
-Help them identify success criteria:
-- Does the agent use the right tools?
-- Does it know when to stop?
-- Are the outputs useful?
-- Does it handle edge cases appropriately?
+**Irreversible actions:** Require confirmation
+```
+Before deleting, modifying, or sending anything, show the user what will happen and ask for confirmation.
+```
 
-Recommend running these tests manually before building automation.
+**Perfectionism:** Allow "good enough"
+```
+If perfect information isn't available after reasonable effort, provide the best answer with caveats rather than continuing indefinitely.
+```
 
-#### 9. Frame Iteration Process
+### Phase 6: Validate the Prompt
 
-Explain that effective agent prompting is about clear communication, not clever tricks.
+Before delivering, verify:
 
-Set expectations for iteration:
-- Test with real scenarios
-- Identify specific failures
-- Refine based on observed behavior
-- Don't try to anticipate every edge case upfront
+1. **Empathy test:** Read the prompt as if you were the agent with only the described tools and context. Could you follow every instruction unambiguously?
 
-### Failure Modes
+2. **Heuristics check:** Are all domain-specific decisions explicit? No "use your judgment" without criteria.
 
-**Overcomplicating initial versions**: Agents often start with overly complex prompts trying to handle every edge case. Remind users to start simple and iterate.
+3. **Architecture check:** All five components present (role, dynamic content, instructions, examples if needed, critical reminders if long)?
 
-**Assuming implicit knowledge**: Users often forget to specify domain-specific heuristics they take for granted. Actively probe for decision-making rules that need explicit definition.
+4. **Side effects check:** Are irreversible actions, loops, and resource limits addressed?
 
-**Rigid reasoning structures**: Avoid suggesting strict "Chain of Thought" patterns that force thinking into a single step. Modern agents work better with flexible reasoning.
+If any check fails, revise the relevant section.
 
-**Missing evaluation criteria**: Users may not know how to tell if their prompt works. Always help them define specific test queries and success criteria.
+## Failure Modes to Avoid
 
-**Ignoring the empathy test**: If the user's instructions are unclear to you (the agent helping them), they'll be unclear to the target agent. Surface this immediately.
+**Overcomplicating:** Start simple. Add complexity only when testing reveals gaps.
 
-**Perfectionist expectations**: Users may set unrealistic standards. Guide them toward "good enough" goals with clear stopping conditions.
+**Implicit knowledge:** Don't assume the agent knows domain rules. If humans in the field would need training, the agent needs explicit instructions.
 
-### Evaluation
+**Rigid reasoning:** Don't prescribe exact thought patterns ("First think X, then think Y"). Let the model reason flexibly between tool calls.
 
-The skill was applied successfully if:
-
-1. The user has a complete prompt with all five architectural components
-2. Domain-specific heuristics are explicitly stated, not assumed
-3. The user can articulate 3-5 realistic test queries
-4. Clear success criteria exist (right tools, knows when to stop, useful outputs)
-5. The prompt passes the empathy test - a human could follow the instructions with the same tools and context
-6. Side effects and irreversible actions are identified and addressed
-7. The user understands the iteration process and isn't trying to perfect everything upfront
-
-The agent should confirm these elements are in place before concluding the skill application.
+**Vague stopping conditions:** "Keep searching until you find it" causes loops. Always define when to stop.
