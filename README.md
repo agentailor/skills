@@ -1,106 +1,62 @@
 # Agentailor Skills
 
-A curated collection of skills for building production-ready AI agents.
+Hand-crafted skills for building AI agents — each one distilled from a technique used and proven in real Agentailor projects, not auto-generated.
 
-These skills enable AI agents to **assist humans in building better agents** — covering prompt design, tool creation, evaluation, and more. They follow the [AgentSkills specification](https://agentskills.io/specification) and are compatible with registries like [skills.sh](https://skills.sh/) and [smithery.ai](https://smithery.ai/).
+These are **skills for agent builders**: drop them into a skill-aware coding agent (Claude Code, or any tool that reads the [AgentSkills spec](https://agentskills.io/specification)) so it can help you design agents to a consistent, production-tested standard. They pair with the deep-dive write-ups on the [Agentailor blog](https://blog.agentailor.com).
+
+---
+
+## Skills
+
+| Skill | What it does |
+|-------|--------------|
+| [`agent-prompt-engineering`](agent-prompt-engineering/) | Design system prompts for autonomous, tool-using agents. Covers the principles, heuristics, thinking guidance, and evaluation strategy that make agents reliable in a loop — with worked prompt examples and the anti-patterns to avoid. Source: [The Art of Agent Prompting](https://blog.agentailor.com/blog/the-art-of-agent-prompting). |
+| [`tool-design`](tool-design/) | Design tools an AI agent can actually use — framework- and language-agnostic (MCP, LangChain/LangGraph, function-calling; TypeScript, Python, …). Five production-tested principles, a validation checklist, and worked examples across surfaces and languages. Source: [Writing Effective Tools for AI Agents](https://blog.agentailor.com/blog/writing-tools-for-ai-agents). |
+
+More skills will be added here as they're proven useful in practice.
 
 ---
 
 ## What is a Skill?
 
-Each skill is defined by a `SKILL.md` file following the [AgentSkills spec](https://agentskills.io/specification):
-
-### Required (per spec)
+Each skill is a directory with a `SKILL.md` following the [AgentSkills spec](https://agentskills.io/specification):
 
 ```yaml
 ---
-name: skill-name          # lowercase, hyphens only, max 64 chars
-description: What this skill does and when to use it.  # max 1024 chars
+name: skill-name          # lowercase, hyphens only, max 64 chars; matches the directory name
+description: What this skill does and when to use it.   # max 1024 chars — this is the trigger
 ---
 ```
 
-The markdown body contains the skill instructions.
-
-### Agentailor Structure (our convention)
-
-Skills in this collection use a structured format:
-
-| Section | Purpose |
-|---------|---------|
-| **Intent** | What behavior this skill enables |
-| **When to Apply** | Trigger conditions for activation |
-| **Inputs** | Information the agent needs to gather |
-| **Instructions** | Step-by-step guidance for the agent |
-| **Failure Modes** | Common mistakes to avoid |
-| **Evaluation** | How to verify correct behavior |
-
----
-
-## Repository Structure
+The Markdown body holds the instructions. Skills follow the standard progressive-disclosure convention: keep `SKILL.md` lean and move detailed material into a `references/` directory (optionally `scripts/` and `assets/`), loaded only when needed.
 
 ```
 skills/
 └── <skill-name>/
-    ├── SKILL.md           # Required: skill definition
-    ├── scripts/           # Optional: executable code
-    ├── references/        # Optional: additional documentation
-    └── assets/            # Optional: templates, resources
+    ├── SKILL.md          # required: frontmatter + instructions
+    ├── references/       # optional: deep-dive docs loaded on demand
+    ├── scripts/          # optional: executable helpers
+    └── assets/           # optional: templates and resources
 ```
 
-### Naming Constraints
+We deliberately keep skills:
 
-- Lowercase letters, numbers, and hyphens only
-- Must not start or end with a hyphen
-- No consecutive hyphens (`--`)
-- Directory name must match the `name` field in SKILL.md
-
----
-
-## Skills in This Collection
-
-These are **meta-skills** — they enable AI agents to help users build production-ready agents:
-
-| Skill | Description |
-|-------|-------------|
-| `agent-prompt-design` | Design effective prompts for AI agents |
-| `tool-design` | Create well-structured tools for AI agents |
-| *(more coming)* | |
+- **Framework-independent where the idea allows** — a good tool-design principle holds whether you use MCP, LangChain, or raw function calling. (Some skills are legitimately framework-specific; that's fine when the pattern itself is.)
+- **Language-neutral where the idea allows** — the same design thinking maps onto TypeScript, Python, and beyond.
+- **Behavior-first** — they describe what an agent should do, not how one library does it.
 
 ---
 
 ## How to Use
 
-**For agent developers:** Reference these skills in your agent's system prompt or use a skill-aware framework.
+**In a coding agent:** point a skill-aware agent (e.g. Claude Code) at this repo, or copy a skill directory into your agent's skills folder, and let it load the skill when the task matches the `description`.
 
-**For AI agents:** When activated, follow the skill instructions to assist users with agent development tasks.
-
-**For registries:** Skills are spec-compliant and can be indexed by [skills.sh](https://skills.sh/) or similar services.
-
----
-
-## Philosophy
-
-Skills are:
-- **Model-agnostic** — work with any LLM
-- **Framework-independent** — not tied to specific libraries
-- **Implementation-neutral** — describe behavior, not code
-
-The goal is to describe **what an agent should do**, not how a specific framework should do it.
-
----
-
-## Contributing
-
-Contributions welcome. To propose a new skill:
-
-1. Create `<skill-name>/SKILL.md` following the spec
-2. Include the Agentailor structure sections
-3. Open a PR with a clear description
+**As a reference:** read the `SKILL.md` and its `references/` directly — they stand on their own as guides.
 
 ---
 
 ## Related
 
 - [AgentSkills Specification](https://agentskills.io/specification)
-- [Agentailor Blog](https://blog.agentailor.com)
-- [skills.sh Registry](https://skills.sh/)
+- [Agentailor blog](https://blog.agentailor.com) — the articles behind these skills
+- [Agentailor](https://agentailor.com) — the hub for developers building AI agents
