@@ -11,7 +11,7 @@ These are **skills for agent builders**: drop them into a skill-aware coding age
 | Skill | What it does |
 |-------|--------------|
 | [`agent-prompt-engineering`](agent-prompt-engineering/) | Design system prompts for autonomous, tool-using agents. Covers the principles, heuristics, thinking guidance, and evaluation strategy that make agents reliable in a loop — with worked prompt examples and the anti-patterns to avoid. Source: [The Art of Agent Prompting](https://blog.agentailor.com/blog/the-art-of-agent-prompting). |
-| [`tool-design`](tool-design/) | Design tools an AI agent can actually use — framework- and language-agnostic (MCP, LangChain/LangGraph, function-calling; TypeScript, Python, …). Five production-tested principles, a validation checklist, and worked examples across surfaces and languages. Source: [Writing Effective Tools for AI Agents](https://blog.agentailor.com/blog/writing-tools-for-ai-agents). |
+| [`tool-design`](tool-design/) | Design tools an AI agent can actually use — framework- and language-agnostic (MCP, LangChain/LangGraph, function-calling; TypeScript, Python, …). Five production-tested principles, a validation checklist, a two-layer testing approach (deterministic tests — unit, integration, whatever the tool warrants — for the contract, evals for the behavior), and worked examples across surfaces and languages. Source: [Writing Effective Tools for AI Agents](https://blog.agentailor.com/blog/writing-tools-for-ai-agents). |
 
 More skills will be added here as they're proven useful in practice.
 
