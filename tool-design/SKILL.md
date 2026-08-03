@@ -1,6 +1,6 @@
 ---
 name: tool-design
-description: Design tools that AI agents can actually use — for any framework or language (MCP servers, LangChain/LangGraph, function-calling, raw JSON schema; TypeScript, Python, or otherwise). Use when writing a new tool for an agent, reviewing or fixing an existing tool definition, deciding how to split capabilities into tools, or debugging why an agent misuses, mis-selects, or floods its context with a tool. Applies equally to standalone tools and MCP-server tools — a tool is a tool.
+description: Design and verify tools that AI agents can actually use — for any framework or language (MCP servers, LangChain/LangGraph, function-calling, raw JSON schema; TypeScript, Python, or otherwise). Use when writing a new tool for an agent, reviewing or fixing an existing tool definition, deciding how to split capabilities into tools, writing tests or evals for a tool, checking that a tool's output matches what its description promised, or debugging why an agent misuses, mis-selects, misreads the output of, or floods its context with a tool. Applies equally to standalone tools and MCP-server tools — a tool is a tool.
 ---
 
 # Tool Design
@@ -26,6 +26,8 @@ Build tools around **user workflows, not database schemas or API endpoints.** Do
 > Prefer one `get_expenses(start_date, end_date, category?, ...)` over `get_expense_by_id` + `list_all_expenses` + `filter_by_category` + `search_expenses`.
 
 Ask: does this map to how users think about the task? Would merging it with a sibling reduce the number of decisions the agent has to make?
+
+**But don't consolidate on data alone.** Two tools touching the same table can still be two workflows. A bounded row listing ("show me my Dining transactions in June") and an aggregate query ("how much did I spend on Dining last quarter") look like prime merge candidates — same data, adjacent phrasing. Merging them into one tool with a mode flag satisfies the principle's letter and makes selection *harder*: the agent now reasons about which mode on every call, and the two have genuinely different return shapes and safety properties. Consolidate operations that share a **workflow**, not operations that merely share **data**.
 
 ### 2. Clear naming and namespacing
 
@@ -65,10 +67,25 @@ When writing or reviewing a tool, confirm:
 - [ ] **Contextual** — returns human-readable info and metadata, not just IDs; verbosity is configurable when responses can be large.
 - [ ] **Efficient** — default limits, pagination/filters, truncation messages that guide the next query; guards against responses that would blow the context window.
 - [ ] **Helpful on failure** — errors explain what went wrong and what to do next, with an example; no cryptic codes.
+- [ ] **Tested** — the checklist items above that are mechanically checkable have deterministic tests (unit at minimum, integration where real I/O decides correctness); the behaviors only a model can exercise have evals (or are knowingly deferred).
+
+## Testing
+
+The checklist above says what a good tool does. Nothing so far says how you know it still does — and **a tool description is a contract with a non-deterministic caller, so an unverified contract is the default failure.** The implementation drifts from what the description promised, and the agent, which has no way to check, believes the description.
+
+Two layers, split on whether a model is in the loop, and neither subsumes the other:
+
+**Deterministic tests — cheap, repeatable, always.** Whatever runs without a model and gives a stable verdict: unit tests as the floor, plus integration tests when correctness depends on real I/O (a multi-step write, a transaction boundary, a third-party API). Most of the checklist is mechanically testable this way: that truncation is *signalled* rather than merely applied, that errors return structured actionable objects, that the payload really contains the fields the description promised, that defaults behave as documented. Assert on the **tool's returned payload** — the surface the agent sees, and the same surface an eval grades later, so the assertions survive.
+
+> A tool that silently caps rows at 50 while its description promises a bounded list will report 262 matches as `count: 50`. A test that stubs a full page against a larger total and asserts `truncated === true` catches that in milliseconds. See [references/testing.md](references/testing.md).
+
+**Evals — needed, harness-agnostic.** No deterministic test can catch **mis-selection** (nothing in a unit test decides whether the agent reached for `query_transactions` or `run_sql` — the model chooses, from your descriptions) or **mis-interpretation** (a unit test proves `truncated: true` is present; only an eval proves the agent *noticed* it and didn't sum a partial page into a confident wrong total). Run the real agent against a seeded fixture and grade the transcript on tools called and final answer. Deferring this layer is a resource decision, **not evidence the risk is absent.**
+
+**Layout:** keep a tool's deterministic tests **beside the tool**, so tool + tests lift into any project as one unit. Evals are the opposite — cross-cutting, spanning several tools, and centralized. The two layers don't live in the same place.
 
 ## Workflows
 
-**Writing a new tool** — Start from the workflow the user cares about (Principle 1), not the data model. Draft the name + description + parameters as if they were prompt text (Principles 2 & 5). Decide the return shape and metadata (Principle 3), then add limits, filters, and guard rails (Principle 4). Run the checklist. Then test: give the agent 3–5 realistic requests and watch whether it selects and calls the tool correctly; refine the description where it stumbles.
+**Writing a new tool** — Start from the workflow the user cares about (Principle 1), not the data model. Draft the name + description + parameters as if they were prompt text (Principles 2 & 5). Decide the return shape and metadata (Principle 3), then add limits, filters, and guard rails (Principle 4). Run the checklist. Then test both layers (see [Testing](#testing)): unit-test the contract — truncation signalled, errors structured, promised fields present — and give the agent 3–5 realistic requests to watch whether it selects, calls, *and interprets* the tool correctly; refine the description where it stumbles.
 
 **Reviewing an existing tool** — Walk the checklist top to bottom. For each miss, name the severity, quote the exact line, explain why it trips an agent, and show the fixed version. The most common real failures: bare/colliding names, `param: type` with no description, returning IDs the agent then has to resolve, unbounded responses, and cryptic error codes.
 
@@ -81,8 +98,10 @@ When writing or reviewing a tool, confirm:
 - **Unbounded responses** — no limit, no pagination; one call floods the context window. Cap and paginate by default.
 - **Cryptic errors** (`ERR_INVALID_DATE`, `TOO_MANY_RESULTS`) — the agent can't self-correct. Say what happened and what to try next.
 - **Framework tunnel vision** — assuming these ideas only apply to MCP, or only to your language. They apply to every tool surface; see [references/examples.md](references/examples.md).
+- **An unverified contract** — the description promises one thing, the implementation returns another, and nothing notices. Unit-test the checklist items that are mechanically checkable; eval the ones that aren't.
 
 ## References
 
 - [references/principles.md](references/principles.md) — the five principles in depth, each illustrated with a neutral `name`/`description`/`parameters`/`returns` schema shape (no framework assumed).
 - [references/examples.md](references/examples.md) — the same tool proven across surfaces and languages: one tool in TypeScript (Zod) and Python (Pydantic) side by side, one standalone (non-MCP) tool, and one real MCP-server tool annotated principle by principle.
+- [references/testing.md](references/testing.md) — verifying the contract: which checklist items are mechanically testable and what each assertion looks like, a worked truncation bug (found in real shipped code) with the test that catches it, and what evals catch that no deterministic test can.

@@ -59,6 +59,23 @@ One tool handles search, filter, and pagination — the operations that co-occur
 
 Consolidate where it clarifies — but don't overload a single tool with unrelated modes. The test is whether the combined tool still maps to *one* thing the user wants.
 
+### When *not* to consolidate
+
+The principle has a real limit, and it's easy to overshoot. Shared data is not shared workflow.
+
+Consider two sibling read tools over the same transactions table:
+
+```
+name: query_transactions   → bounded row listing   "show me my Dining transactions in June"
+name: run_sql              → aggregates            "how much did I spend on Dining last quarter?"
+```
+
+They look like prime merge candidates — same table, adjacent phrasing, both read-only. But they return different shapes (rows plus truncation metadata vs. a scalar), and they need different safety envelopes (arbitrary SQL runs `READ ONLY`; a filtered listing needs no such guard). A merged tool with a mode flag doesn't remove the agent's decision — it hides it inside a parameter, where the description can no longer state plainly what the tool returns.
+
+Keeping them separate also lets each description **route away from the other** — `query_transactions` telling the agent "for a total or a ranking across ALL matches, use `run_sql` instead" is a boundary you can only draw between two tools.
+
+> **The test:** consolidate operations that share a **workflow**, not operations that merely touch the same **data**.
+
 ---
 
 ## 2. Clear naming and namespacing
