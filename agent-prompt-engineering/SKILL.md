@@ -1,6 +1,6 @@
 ---
 name: agent-prompt-engineering
-description: Comprehensive guide for designing effective system prompts for autonomous AI agents based on Anthropic's production practices. Use when creating or refining prompts for agents that operate in loops with tool access, including when asked to write agent instructions, system prompts, agent configurations, or when improving agent reliability and decision-making capabilities.
+description: "Comprehensive guide for designing, refining, and auditing system prompts for autonomous AI agents based on Anthropic's production practices. Use when creating or refining prompts for agents that operate in loops with tool access, including when asked to write agent instructions, system prompts, agent configurations, or when improving agent reliability and decision-making capabilities. Also use to audit a prompt that already exists — trimming one that has grown long, re-fitting it after upgrading or downgrading the model behind it, or debugging an agent that seems over-constrained."
 ---
 
 # Agent Prompt Engineering
@@ -35,9 +35,11 @@ When [handling requests], follow these steps:
 2. [Step 2]
 3. [Step 3]
 
-<!-- Repeat Critical Instructions -->
+<!-- Repeat Critical Instructions — only in long prompts, see note below -->
 Remember to [most important constraint].
 ```
+
+**On repeating the critical instruction:** this earns its place in a long prompt, where the constraint would otherwise sit hundreds of lines from the decision it governs. On a frontier model with a short prompt it's unnecessary by default — the instruction was already read, and the restatement just spends tokens. Start without it and add it back if a constraint is actually being missed.
 
 Perfect prompts emerge through iteration. Use AI to draft initial versions, then refine through testing.
 
@@ -283,6 +285,18 @@ If your prompt change significantly improves the agent, you'll see it with just 
 - Wrong tool selection
 - Premature conclusions
 
+## Maintaining an Existing Prompt
+
+Everything above is about getting a prompt right. A prompt that has been in production for months has a different problem: it grew one incident at a time, and much of it now compensates for behavior the model you run today produces on its own. That prompt isn't badly written — it's **over-fitted to a model that no longer exists.** Those instructions were load-bearing when written; the model outgrew needing them.
+
+Run a maintenance pass when you change the model, when the prompt has grown past the point anyone reads it end to end, or when the agent starts behaving as if over-constrained: looping, over-qualifying, refusing reasonable requests. The reflex is to add a line correcting that; often the fix is deleting the line that caused it.
+
+The pass is not "delete instructions" — it is **re-fitting instruction density to the model you actually run**, which means a **downgrade triggers it as much as an upgrade.** Terseness that reads as trust on a frontier model reads as ambiguity to a model with less headroom, so a prompt that got leaner for Opus may need scaffolding back when you route the step to Haiku. Treat prompt and model as a versioned pair.
+
+Two things govern the pass. **Evals are a prerequisite** — without a baseline, "I deleted most of it and it seems fine" is worth nothing, and the regression surfaces weeks later on the traffic you don't test. And the rule for what survives: **delete what the model can infer, keep what only you know.** Product invariants, non-obvious facts about your harness, and domain conventions stay regardless of how redundant they look.
+
+For the full checklist — the six patterns that identify deletion candidates, the tests that protect the load-bearing lines, and how to run and measure the pass — see [references/audit.md](references/audit.md). It also cites the published result behind this (Anthropic's ~80% cut to the Claude Code system prompt) if you need the scale and the caveats.
+
 ## Common Prompt Structure for Agents
 
 While structure varies by use case, most production agent prompts follow this pattern:
@@ -321,7 +335,7 @@ Important boundaries:
 - [Limitation 1]
 - [Limitation 2]
 
-<!-- Critical Constraints (Repeated) -->
+<!-- Critical Constraints (Repeated) — long prompts only; see the note in Core Principle 1 -->
 Remember: [Most important constraint repeated for emphasis]
 ```
 
@@ -373,6 +387,9 @@ Adjust response detail accordingly:
 Complete agent prompt examples including the Cameron AI financial assistant and production patterns from real-world deployments.
 
 ### references/anti-patterns.md
-Common mistakes in agent prompting with explanations of why they fail and how to fix them.
+Common mistakes in agent prompting with explanations of why they fail and how to fix them, including the over-constraint patterns that accumulate in a prompt over time.
+
+### references/audit.md
+The maintenance pass for a prompt that already exists: why evals are a prerequisite, the six patterns that identify deletion candidates, the model-tier rule, and — the half that matters more — what must never be deleted.
 
 See references for detailed examples and patterns.
