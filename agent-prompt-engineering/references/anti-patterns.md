@@ -384,6 +384,140 @@ Before responding:
 Remember: Verify information quality before responding.
 ```
 
+---
+
+## Anti-patterns that accumulate over time
+
+The patterns above mostly appear when a prompt is written. The four below appear as it *ages* — they accumulate through maintenance, as instructions are added for reasons that later expire, copied between agents, or left behind when the enforcement moved elsewhere. Finding and removing them is a maintenance pass; see [audit.md](audit.md).
+
+## Anti-Pattern 13: The Same Rule in the Prompt and the Tool Description
+
+### ❌ What NOT to do:
+
+```
+<!-- In the system prompt -->
+Never call process_refund for amounts over $500 without explicit user confirmation.
+Refunds are irreversible, so always summarize the refund before executing it.
+```
+
+```
+<!-- In the tool description for process_refund -->
+Issues a refund to the customer's original payment method. Irreversible.
+Requires explicit user confirmation for amounts over $500.
+```
+
+**Why this fails:**
+- Two copies drift. One gets updated, the other becomes a contradiction the agent has to resolve.
+- The prompt copy is loaded on every request, including the ones that never touch refunds.
+- It reads as emphasis, so nobody deletes it — the duplication is self-protecting.
+
+### ✅ Better approach:
+
+Keep the constraint in the **tool description**, and delete the prompt copy. The tool description sits closest to the decision it governs, is in context exactly when the tool is a candidate, and travels with the tool if it's reused by another agent.
+
+```
+<!-- Tool description only -->
+Issues a refund to the customer's original payment method. Irreversible.
+For amounts over $500, present a summary and obtain explicit user confirmation
+before calling this tool.
+```
+
+The system prompt keeps only what generalizes across tools: "For irreversible actions, summarize and confirm before proceeding."
+
+## Anti-Pattern 14: Formatting Instructions the Model Already Follows
+
+### ❌ What NOT to do:
+
+```
+Format your responses using markdown. Use headers to separate sections.
+Use bullet points for lists of three or more items. Bold key terms.
+Do not write walls of text — break long responses into paragraphs.
+Use a table when comparing more than two options.
+Always end with a brief summary of what you said.
+```
+
+**Why this fails:**
+- Describes what the model already does. Every line is pure token cost.
+- The rigid ones actively hurt: "always end with a summary" produces a redundant paragraph on two-sentence answers.
+- It crowds out the formatting guidance that *is* load-bearing — your actual product constraints.
+
+### ✅ Better approach:
+
+State only what's specific to your surface, and only where the default would be wrong:
+
+```
+Responses render in a narrow terminal panel — avoid tables wider than 80 characters.
+Never use headers; the panel strips them.
+```
+
+Everything else, let the model handle. If the default formatting is genuinely wrong for your product, that's a real instruction; if it's merely conventional, delete it.
+
+**This one is tier-dependent.** Formatting scaffolds are among the first things a capable model stops needing and among the last a small one can do without — so check against the model you actually run rather than assuming. See [audit.md](audit.md#the-model-tier-rule).
+
+## Anti-Pattern 15: Generic Tool-Use Advice That Describes Default Behavior
+
+### ❌ What NOT to do:
+
+```
+- Only use tools when you genuinely need current, specific, or specialized information
+- Do NOT use tools for information you already know with confidence
+- Use tools efficiently — don't make unnecessary calls
+- Follow the exact function signatures provided
+```
+
+**Why this fails:**
+- None of it is specific to *your* agent. It describes how tool-using models already behave.
+- It creates a false sense of coverage — the prompt *looks* like it addresses tool use while saying nothing actionable.
+- It displaces the guidance that would help: which tool for which situation, and what the budget is.
+- The last line is worse than inert: "follow the exact function signatures" instructs the model not to do something it structurally cannot do (see [Anti-Pattern 16](#anti-pattern-16-instructing-the-model-not-to-do-something-it-structurally-cannot-do)).
+
+### ✅ Better approach:
+
+Replace generic advice with the decisions the model genuinely cannot make on its own — selection between plausible siblings, and where to stop:
+
+```
+search_docs returns individual matching passages (capped at 20). summarize_corpus
+works across the whole document set. For "how many" or "which documents mention",
+use summarize_corpus — the passages from search_docs are a sample, not a census.
+
+Budget: 1-2 calls for a lookup, up to 6 when synthesizing across sources.
+```
+
+The test for any tool-use line: **would the agent behave differently without it?** If not, delete it.
+
+## Anti-Pattern 16: Instructing the Model Not to Do Something It Structurally Cannot Do
+
+### ❌ What NOT to do:
+
+```
+Do not access the user's database directly.
+Never send emails on the user's behalf without permission.
+Do not modify files outside the working directory.
+Never make purchases with the stored payment method.
+```
+
+…in an agent whose only tools are `search_docs` and `summarize_page`.
+
+**Why this fails:**
+- The capability doesn't exist, so the instruction cannot change any outcome. It is a comment, not a constraint.
+- It misrepresents the agent's surface to the model — telling it not to send emails implies email is somehow reachable.
+- It substitutes for real enforcement. A constraint that matters belongs in the harness — a permission gate, an approval step, a tool that isn't registered — not in a sentence the model is asked to honor.
+- These accumulate the fastest, because they're copied between agents that have different tools.
+
+### ✅ Better approach:
+
+Audit the prohibition list against the actual tool list, and delete every line whose capability isn't there. For the ones that *are* reachable, enforce them structurally and let the prompt explain the gate rather than pretend to be it:
+
+```
+send_email requires explicit user approval before it executes — the harness will
+surface a confirmation. Present the recipient, subject, and body in your summary
+so the user can approve on an informed basis.
+```
+
+The prompt now describes a real mechanism instead of asking the model to be the mechanism.
+
+Distinct from [Anti-Pattern 13](#anti-pattern-13-the-same-rule-in-the-prompt-and-the-tool-description), which is about a real constraint stated in two places. This one is about a constraint that isn't enforced anywhere — the prompt is the only thing standing between the agent and the action, and a sentence is not an enforcement mechanism.
+
 ## Summary: Key Principles to Remember
 
 **DO:**
@@ -393,6 +527,8 @@ Remember: Verify information quality before responding.
 - Define clear boundaries and edge cases
 - Use adaptive complexity based on task
 - Request confirmation for irreversible actions
+- Keep a constraint in one place — the tool description, when it governs a tool
+- Enforce hard constraints in the harness, and let the prompt explain the gate
 
 **DON'T:**
 - Show prescriptive few-shot examples
@@ -402,3 +538,7 @@ Remember: Verify information quality before responding.
 - Force rigid workflows
 - Assume context that doesn't exist
 - Repeat instructions excessively
+- State the same rule in both the prompt and the tool description
+- Specify formatting the model already handles correctly
+- Give generic tool-use advice that describes default behavior
+- Prohibit actions the agent has no tool to perform
