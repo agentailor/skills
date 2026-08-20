@@ -384,6 +384,12 @@ Before responding:
 Remember: Verify information quality before responding.
 ```
 
+---
+
+## Anti-patterns that accumulate over time
+
+The patterns above mostly appear when a prompt is written. The four below appear as it *ages* — they accumulate through maintenance, as instructions are added for reasons that later expire, copied between agents, or left behind when the enforcement moved elsewhere. Finding and removing them is a maintenance pass; see [audit.md](audit.md).
+
 ## Anti-Pattern 13: The Same Rule in the Prompt and the Tool Description
 
 ### ❌ What NOT to do:
@@ -418,7 +424,7 @@ before calling this tool.
 
 The system prompt keeps only what generalizes across tools: "For irreversible actions, summarize and confirm before proceeding."
 
-## Anti-Pattern 14: Formatting Instructions a Frontier Model No Longer Needs
+## Anti-Pattern 14: Formatting Instructions the Model Already Follows
 
 ### ❌ What NOT to do:
 
@@ -446,6 +452,8 @@ Never use headers; the panel strips them.
 
 Everything else, let the model handle. If the default formatting is genuinely wrong for your product, that's a real instruction; if it's merely conventional, delete it.
 
+**This one is tier-dependent.** Formatting scaffolds are among the first things a capable model stops needing and among the last a small one can do without — so check against the model you actually run rather than assuming. See [audit.md](audit.md#the-model-tier-rule).
+
 ## Anti-Pattern 15: Generic Tool-Use Advice That Describes Default Behavior
 
 ### ❌ What NOT to do:
@@ -468,11 +476,11 @@ Everything else, let the model handle. If the default formatting is genuinely wr
 Replace generic advice with the decisions the model genuinely cannot make on its own — selection between plausible siblings, and where to stop:
 
 ```
-query_transactions returns individual rows (capped at 200). run_sql aggregates
-across all matches. For any total, average, or ranking, use run_sql — never sum
-the rows from query_transactions.
+search_docs returns individual matching passages (capped at 20). summarize_corpus
+works across the whole document set. For "how many" or "which documents mention",
+use summarize_corpus — the passages from search_docs are a sample, not a census.
 
-Budget: 2-3 tool calls for a direct lookup, up to 8 for multi-account analysis.
+Budget: 1-2 calls for a lookup, up to 6 when synthesizing across sources.
 ```
 
 The test for any tool-use line: **would the agent behave differently without it?** If not, delete it.
@@ -508,6 +516,8 @@ so the user can approve on an informed basis.
 
 The prompt now describes a real mechanism instead of asking the model to be the mechanism.
 
+Distinct from [Anti-Pattern 13](#anti-pattern-13-the-same-rule-in-the-prompt-and-the-tool-description), which is about a real constraint stated in two places. This one is about a constraint that isn't enforced anywhere — the prompt is the only thing standing between the agent and the action, and a sentence is not an enforcement mechanism.
+
 ## Summary: Key Principles to Remember
 
 **DO:**
@@ -532,5 +542,3 @@ The prompt now describes a real mechanism instead of asking the model to be the 
 - Specify formatting the model already handles correctly
 - Give generic tool-use advice that describes default behavior
 - Prohibit actions the agent has no tool to perform
-
-Anti-patterns 13-16 accumulate over a prompt's life rather than appearing at authoring time. Finding and removing them is a maintenance pass — see [audit.md](audit.md).

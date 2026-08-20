@@ -287,15 +287,13 @@ If your prompt change significantly improves the agent, you'll see it with just 
 
 ## Maintaining an Existing Prompt
 
-Everything above is about getting a prompt right. A prompt that has been in production for months has a different problem: it grew one incident at a time, and much of it now compensates for behavior the model you run today produces on its own. That prompt isn't badly written — it's **over-fitted to a model that no longer exists.** Those instructions were load-bearing when written; the model outgrew needing them.
+Everything above is about getting a prompt right. A prompt that has been in production for months has a different problem: it grew one incident at a time, and much of it now compensates for behavior the model you run today produces on its own. That prompt isn't badly written — it's **over-fitted to a model that no longer exists.**
 
-Run a maintenance pass when you change the model, when the prompt has grown past the point anyone reads it end to end, or when the agent starts behaving as if over-constrained: looping, over-qualifying, refusing reasonable requests. The reflex is to add a line correcting that; often the fix is deleting the line that caused it.
+Run a maintenance pass when you change the model — in **either** direction, since a downgrade re-fits density as much as an upgrade does — when the prompt has grown past the point anyone reads it end to end, or when the agent behaves as if over-constrained: looping, over-qualifying, refusing reasonable requests. The reflex is to add a line correcting that; often the fix is deleting the line that caused it.
 
-The pass is not "delete instructions" — it is **re-fitting instruction density to the model you actually run**, which means a **downgrade triggers it as much as an upgrade.** Terseness that reads as trust on a frontier model reads as ambiguity to a model with less headroom, so a prompt that got leaner for Opus may need scaffolding back when you route the step to Haiku. Treat prompt and model as a versioned pair.
+Two rules govern the pass. **Audit freely, delete carefully:** marking what looks stale needs no test infrastructure, but deleting needs some way to notice a regression — an eval suite, a handful of hand-run cases, or inspection for duplication — matched to the stakes. And **delete what the model can infer, keep what only you know.**
 
-Two things govern the pass. **Evals are a prerequisite** — without a baseline, "I deleted most of it and it seems fine" is worth nothing, and the regression surfaces weeks later on the traffic you don't test. And the rule for what survives: **delete what the model can infer, keep what only you know.** Product invariants, non-obvious facts about your harness, and domain conventions stay regardless of how redundant they look.
-
-For the full checklist — the six patterns that identify deletion candidates, the tests that protect the load-bearing lines, and how to run and measure the pass — see [references/audit.md](references/audit.md). It also cites the published result behind this (Anthropic's ~80% cut to the Claude Code system prompt) if you need the scale and the caveats.
+The six patterns that find candidates, the tests that protect the load-bearing lines, and how to verify a deletion are in [references/audit.md](references/audit.md).
 
 ## Common Prompt Structure for Agents
 
@@ -390,6 +388,6 @@ Complete agent prompt examples including the Cameron AI financial assistant and 
 Common mistakes in agent prompting with explanations of why they fail and how to fix them, including the over-constraint patterns that accumulate in a prompt over time.
 
 ### references/audit.md
-The maintenance pass for a prompt that already exists: why evals are a prerequisite, the six patterns that identify deletion candidates, the model-tier rule, and — the half that matters more — what must never be deleted.
+The maintenance pass for a prompt that already exists: the six patterns that identify deletion candidates, the model-tier rule, how to verify a deletion when there's no eval harness, and — the half that matters more — what must never be deleted.
 
 See references for detailed examples and patterns.
