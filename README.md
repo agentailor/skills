@@ -18,6 +18,40 @@ More skills will be added here as they're proven useful in practice.
 
 ---
 
+## Install
+
+Install with the [`skills`](https://github.com/vercel-labs/skills) CLI. It asks which coding agent to install into — Claude Code, Cursor, Codex, Copilot, Gemini, Antigravity, etc:
+
+```bash
+npx skills add agentailor/skills --skill tool-design
+npx skills add agentailor/skills --skill agent-prompt-engineering
+npx skills add agentailor/skills --skill agent-eval-cases
+```
+
+Install everything:
+
+```bash
+npx skills add agentailor/skills --skill '*'
+```
+
+Useful flags:
+
+| Flag | What it does |
+|------|--------------|
+| `-a, --agent <agents>` | Pick the target agent(s) up front instead of being prompted; `'*'` installs to all detected agents. |
+| `-g, --global` | Install user-level (every project) instead of into the current project. |
+| `-l, --list` | List the skills in this repo without installing anything. |
+| `--all` | Shorthand for `--skill '*' --agent '*' -y` — everything, everywhere, no prompts. |
+
+Update to the latest version later, and see what's installed:
+
+```bash
+npx skills update
+npx skills list
+```
+
+---
+
 ## What is a Skill?
 
 Each skill is a directory with a `SKILL.md` following the [AgentSkills spec](https://agentskills.io/specification):
@@ -50,7 +84,7 @@ We deliberately keep skills:
 
 ## How to Use
 
-**In a coding agent:** point a skill-aware agent (e.g. Claude Code) at this repo, or copy a skill directory into your agent's skills folder, and let it load the skill when the task matches the `description`.
+**In a coding agent:** [install](#install) a skill into your agent's skills folder and let it load the skill when the task matches the `description` — you don't invoke it by hand.
 
 **As a reference:** read the `SKILL.md` and its `references/` directly — they stand on their own as guides.
 
