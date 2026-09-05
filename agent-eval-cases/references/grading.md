@@ -253,7 +253,7 @@ If the answer is no, that grader is carrying the contract alone and needs a part
 
 Before any grader runs, the harness has to answer a prior question: **did this run complete validly?** A grader is a claim about a finished run, and applied to a broken one it produces a verdict that means nothing.
 
-Two versions of this, and they need different guards.
+Three versions of this, and they need different guards.
 
 ### The run errored
 
@@ -275,6 +275,23 @@ That is a false green on exactly the assertion you wrote the case for. Two ways 
 The general form is the same rule as [vacuous passes](#vacuous-passes): **an assertion about an intention is weaker than an assertion about an effect.** A tool call is an intention. Its result is the effect.
 
 > When auditing an existing suite, this is worth checking explicitly, because it is invisible until a tool starts failing: does the tool-called grader read the calls, or the calls *and* their results?
+
+### The conversation went somewhere the case did not anticipate
+
+The one that hides longest, and it only affects multi-turn cases.
+
+A case with scripted turns replays them **regardless of what the agent said**. Turn two is sent whether or not turn one produced the question it answers. That works exactly as long as every question the agent asks is one the case author predicted — and nothing checks that assumption.
+
+So the agent asks something new, the script answers a different question, and the case goes red. Every grader then reports on a conversation that never happened: *nothing was written*, *the gate never fired*. All true, all misleading, because the real cause is that the agent asked something and is still waiting.
+
+**A run like that has not tested anything.** Failing it blames the agent for a gap in the case, and the report says the opposite of what happened.
+
+Two consequences for grading:
+
+- **Distinguish "the agent did nothing" from "the agent asked something unexpected".** These read identically in a trajectory and mean opposite things. If the capture records what the agent last said, that sentence usually identifies the missing fact outright.
+- **A grader listing possible causes is claiming those are the only ones.** "Nothing was written — mapping rejected, or never imported" costs hours the day a third cause appears. Only enumerate causes the harness can actually bound.
+
+Where a harness supports it, the clean handling is a **third outcome** beside pass and fail — *inconclusive* — whose runs skip their graders entirely. If yours does not, the point still stands as a reading habit: a red multi-turn case is a claim about the agent, and it is only trustworthy if the conversation went the way the case assumed.
 
 ---
 
