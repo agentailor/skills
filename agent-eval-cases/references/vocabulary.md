@@ -11,6 +11,7 @@ The concepts in this skill are stable across eval frameworks. The names are not.
 5. [The prod/eval message rule](#the-prodeval-message-rule)
 6. [A neutral case shape](#a-neutral-case-shape)
 7. [Worked cases](#a-single-turn-case)
+8. [Scripted turns are an input contract](#scripted-turns-are-an-input-contract)
 
 ---
 
@@ -205,4 +206,34 @@ Three things to carry over:
 - **The escalation is the test.** Turn one is answered correctly by almost any agent — the case exists for turns two and three, and a single-turn version of it would pass while the real defect shipped.
 - **Which turn the judge sees matters.** Here the *last* turn is the request being judged, which is the sensible default. A case grading synthesis *across* turns needs the judge to see all of them — get this wrong and a correct answer is graded against a question it was never shown the context for.
 
-A second shape worth knowing: when the point is that the agent **stops and asks before acting**, turn two supplies the answer to the question turn one should have provoked. An agent that acted immediately on turn one must still fail, even though the transcript ends with the user approving — which is possible because a later turn cannot undo the action. Assert that however your harness allows: on what actually changed by the end, or, if it supports per-turn expectations, directly on turn one having taken no action.
+### Scripted turns are an input contract
+
+A second shape, and the one with a trap in it: when the point is that the agent **stops and asks before acting**, turn two supplies the answer to the question turn one should have provoked. An agent that acted immediately on turn one must still fail, even though the transcript ends with the user approving — which works because a later turn cannot undo the action.
+
+The trap is that **a scripted array is sent regardless of what the agent said.** Turn two goes out whether or not turn one produced the question it answers. The case holds only while every question the agent asks is one the author predicted — and the day the agent starts asking something new (usually because it got *better*), the script answers the wrong question and the case goes red for a reason that has nothing to do with the defect.
+
+That gives one rule and one warning sign:
+
+- **Write the opening turn so the question you want is the only sensible one**, and keep scripted arrays short. Every scripted turn is a prediction about what the agent will say.
+- **If making the agent more careful turns cases red, suspect the cases.** A suite that punishes asking is selecting for agents that guess — the opposite of what a stop-and-ask case exists to reward.
+
+#### One durable fix: a simulated user
+
+The obvious patch — add the newly-asked question to the script, everywhere — fails on contact. You cannot enumerate what an agent might ask, the list changes every time a tool description moves, and each new case restarts the guessing.
+
+The approach that recurs across the eval literature is a **simulated user**: an LLM that answers the agent's questions from a **constrained fact sheet**, so a case declares *what the user knows* rather than *what they will say*. A question nobody predicted still gets a sensible reply, and the case survives the agent changing its mind. Several eval libraries ship one — typically as a multi-turn simulation runner, often with an option to replay the first *n* turns verbatim before improvising, which makes adopting it cheap for cases that already exist.
+
+**It is a harness capability, not a case-writing choice.** If the harness has one, use it for cases whose whole point is the agent asking. If it does not, raise it rather than building it.
+
+**It is not an LLM judge**, and the distinction matters if your suite is deliberately judge-free: the simulator produces **input**. Graders stay exactly as they were, deterministic functions over the capture. Nothing about what is asserted changes.
+
+**And it is not free.** Four limits worth knowing before adopting one:
+
+- **A second thing that can be wrong.** A red case can now mean the agent misbehaved *or* the simulated user answered badly. The report has to keep those apart or you chase phantom regressions.
+- **It is not a proxy for a human.** Published work comparing simulated against real users finds simulated conversations attribute failures to the agent roughly **twice as often**, and that swapping the simulator model alone moves scores materially. Simulated users also ask questions considerably more often than real ones — which matters most when the behavior under test *is* asking.
+- **It needs the same discipline as a fixture.** Pin its model separately from the agent's, run it at temperature 0, and record it in the report. Changing it invalidates historical results.
+- **It adds variance on top of the agent's.** Give simulated cases more repeats than scripted ones.
+
+Two prompt rules do most of the work in keeping one honest, both borrowed from the standard user-simulator prompts: **do not volunteer everything at once** (or the agent's asking behavior stops being observable), and **do not invent facts that are not on the sheet** — say you do not know. A simulator that invents a value the fixture contradicts makes a grader assert against a premise the conversation never established.
+
+One thing to get right in the fact sheet: **anything the agent must obtain belongs on it**, including preferences rather than just values. If the agent has to ask "should I save this as your default?" and nothing on the sheet covers wanting it saved, the run stalls — and any grader asserting that the save happened can never pass.

@@ -133,12 +133,13 @@ So: **write the case, run it red, and confirm it fails for the reason you claime
 
 ## When a case is red, the grader is a suspect too
 
-A red case has at least four possible causes, and jumping to the first is how suites go wrong:
+A red case has at least five possible causes, and jumping to the first is how suites go wrong:
 
 1. **The agent is wrong** — the defect is real and present.
 2. **The grader is wrong** — it is asserting something other than what you care about (a route instead of an outcome, one phrasing of a claim, an example from its own rubric).
 3. **The case is wrong** — it asserts a path when it cares about a result, or it depends on a fixture detail that changed.
 4. **The judge was too small for the question** — a nuanced verdict from a cheap model flips in a way that reads exactly like an agent regression. Cheapest to rule out: re-run on a stronger judge before changing anything. See [grading.md](grading.md#choosing-the-judge).
+5. **The conversation never happened as the case assumed** — in a multi-turn case, the agent asked something the scripted turns do not answer, so every grader is reporting on a conversation that went somewhere else. Check what the agent actually said before trusting any verdict. See [grading.md](grading.md#the-conversation-went-somewhere-the-case-did-not-anticipate).
 
 Work out which before changing anything. For judge-graded cases, **read the reasoning, not just the verdict** — a judge that failed a good answer will usually explain itself, and the explanation shows whether it applied the rule or pattern-matched an example.
 
