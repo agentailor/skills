@@ -11,6 +11,8 @@ A case is **one task you give the agent, plus the graders that decide whether wh
 
 That is the whole shape — and note what it is *not*. It is not an input paired with an expected output. There is no single correct answer string to compare against, which is why the right-hand side is a **list of graders** rather than a value. Many frameworks offer an `expected` / `expected_output` field; reaching for it by default is the most common way to write a suite that measures phrasing instead of behavior.
 
+A case in this sense measures **behavior**: what the agent did on one task, against assertions you wrote. That is a different exercise from scoring an agent **end to end** — a benchmark suite, a composite pass rate, a score you can compare across models. The two answer different questions and neither substitutes for the other: an end-to-end score tells you something got worse without telling you which behavior moved, and a behavioral case tells you a specific behavior is intact without telling you whether the agent is any good at its actual job. **This skill is about the behavioral kind** — which is the one a prompt or tool change is iterated against, because it fails in a way you can act on.
+
 Three consequences shape everything below:
 
 - **A grader can assert on what the agent *said* or on what the agent *did*** — which tools it called, what is in the store afterwards, whether a gate fired. The second kind is usually the stronger one.
@@ -66,6 +68,8 @@ A failure that a unit test could have caught is a failure you will pay to re-det
 1. **Is the payload ambiguous?** The fix belongs in the payload. An empty result that means two different things — "this filter matched nothing" and "the thing you filtered on does not exist" — forces the agent to guess, and no eval case repairs that, because it was reasoning correctly over a misleading input. Same for a page that is silently capped rather than marked partial. This is [`tool-design`](https://github.com/agentailor/skills/tree/main/tool-design) territory.
 2. **Is it mechanically checkable?** It belongs in the ordinary test suite — a unit test over the tool, or an integration test where real I/O decides correctness. Truncation signalled, errors structured, promised fields present, defaults applied: all provable without a model, in milliseconds.
 3. **What is left is an eval case.** Typically: the agent had correct information and used it wrongly, or chose the wrong tool, or ignored an instruction — and only sometimes, which is the part no assertion over a return value can reach.
+
+The stack continues upward, which is worth knowing even though it is outside this skill. An **end-to-end** score — a benchmark, a composite pass rate over whole tasks — sits above layer 3 and reports that the agent got worse without saying which behavior moved. That is the division of labour: end-to-end detects, behavioral cases diagnose. A red benchmark with no behavioral suite underneath it leaves you bisecting a prompt by hand.
 
 **This filter assumes layer 2 exists. Check that it does.** If the project has no tests over its tools, say so plainly — pushing a failure down to a layer that is not there means nothing catches it, and the case you were about to skip becomes the only guard. Two consequences worth stating to the builder:
 
@@ -193,4 +197,4 @@ The detail — including how to tell a legitimate grader fix from moving the goa
 - [references/elicitation.md](references/elicitation.md) — the interview: what to ask to surface observed failures from traces, the builder, or a domain expert; how to triage each answer; and what to do when there is nothing to go on.
 - [references/grading.md](references/grading.md) — picking graders: the atomicity rule, grader shapes and their failure modes, vacuous passes, rubric design, the human tier, and the rule for when loosening a grader is legitimate.
 - [references/first-run.md](references/first-run.md) — reading the first red run: interrogating greens, checking premises before building fixes, and telling a broken grader from a broken agent.
-- [references/vocabulary.md](references/vocabulary.md) — the five concepts every eval framework has and the names they go by; how to identify them in a harness you have not seen; how to write into an existing suite; and why what a case can assert is bounded by what the harness captured.
+- [references/vocabulary.md](references/vocabulary.md) — the five concepts every eval framework has and the names they go by; the behavioral/end-to-end split that the word "eval" hides; how to identify them in a harness you have not seen; how to write into an existing suite; and why what a case can assert is bounded by what the harness captured.

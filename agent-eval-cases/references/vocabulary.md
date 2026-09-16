@@ -5,13 +5,14 @@ The concepts in this skill are stable across eval frameworks. The names are not.
 ## Table of Contents
 
 1. [The term map](#the-term-map)
-2. [Two differences that change how you write a case](#two-differences-that-change-how-you-write-a-case)
-3. [Writing into an existing suite](#writing-into-an-existing-suite)
-4. [What a case can assert is bounded by what the harness captured](#what-a-case-can-assert-is-bounded-by-what-the-harness-captured)
-5. [The prod/eval message rule](#the-prodeval-message-rule)
-6. [A neutral case shape](#a-neutral-case-shape)
-7. [Worked cases](#a-single-turn-case)
-8. [Scripted turns are an input contract](#scripted-turns-are-an-input-contract)
+2. ["Eval" names two different exercises](#eval-names-two-different-exercises)
+3. [Two differences that change how you write a case](#two-differences-that-change-how-you-write-a-case)
+4. [Writing into an existing suite](#writing-into-an-existing-suite)
+5. [What a case can assert is bounded by what the harness captured](#what-a-case-can-assert-is-bounded-by-what-the-harness-captured)
+6. [The prod/eval message rule](#the-prodeval-message-rule)
+7. [A neutral case shape](#a-neutral-case-shape)
+8. [Worked cases](#a-single-turn-case)
+9. [Scripted turns are an input contract](#scripted-turns-are-an-input-contract)
 
 ---
 
@@ -42,6 +43,26 @@ Two mismatches worth noticing early, because they change what you write rather t
 
 - **A "grader" that returns a number rather than pass/fail** — then a threshold exists somewhere, and you need to know where.
 - **A framework centered on `expected`** — the field is fine, but it invites comparing whole answers as prose. See below.
+
+---
+
+## "Eval" names two different exercises
+
+Before mapping any of the five concepts onto a project, check which exercise the project means by the word — the same term covers both, and the two share almost no mechanics.
+
+| | **Behavioral** | **End-to-end** |
+| --- | --- | --- |
+| The unit | One task, graded by assertions you wrote | A whole job, scored by whether it came out right |
+| What it reports | A named behavior held or broke | A composite number that moved |
+| Graders | Mostly deterministic, over the capture | Usually one outcome check per task — tests pass, task completed |
+| Answers | *Which* behavior changed | *Whether* the agent got better or worse overall |
+| Built from | Failures someone observed | A fixed task set, often a public benchmark |
+
+**This skill covers the behavioral kind only.** The distinction matters at the point of contact: someone asking for "an eval" after a model upgrade often wants a comparable score across models, which is the end-to-end exercise and is not what these cases produce. Say which one you are writing.
+
+They are complementary rather than competing — end-to-end detects a regression, behavioral cases say what it was — so a project having one is not a reason to skip the other.
+
+A practical tell when reading someone's suite: **look at what the graders assert.** Assertions over tool calls, state after the run, or a specific claim in the answer are behavioral. A single "did the task succeed" per case, aggregated into a rate, is end-to-end — and adding a behavioral case to that suite means adding a kind of grader it does not currently have.
 
 ---
 
