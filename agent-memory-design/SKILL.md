@@ -88,7 +88,7 @@ The index can live in the system prompt or in the recall tool's own description;
 
 ## The tools
 
-Three tools, small and single-purpose: **save** (`title`, `content`, optional `replaces` to update in place), **recall** (by id), **forget** (by id, never by search, since a predicate can match more than intended). The behavior lives in their descriptions. Every failure returns something the agent can act on in one step: a duplicate title returns the existing memory and how to replace it; a full memory says so and suggests what to drop; unknown ids come back by name; a forget that matched nothing is an error, not "ok". Full schemas and payloads: [references/tools.md](references/tools.md). For tool design in general, see the `tool-design` skill.
+Three tools, small and single-purpose: **save** (`title`, `content`, optional `replaces` to update in place), **recall** (by id), **forget** (by id, never by search, since a predicate can match more than intended). The behavior lives in their descriptions. Every failure returns something the agent can act on in one step: a duplicate title returns the existing memory and how to replace it; a full memory says so and suggests what to drop; unknown ids come back by name; a forget that matched nothing is an error, not "ok". Full schemas and payloads: [references/tools.md](references/tools.md). For tool design in general, see [`tool-design`](https://github.com/agentailor/skills/tree/main/tool-design).
 
 **Cap the count** and fail loudly at the cap, pushing toward replacing. A cap that's hit is a signal, not a nuisance: see [When it stops scaling](#when-it-stops-scaling).
 
